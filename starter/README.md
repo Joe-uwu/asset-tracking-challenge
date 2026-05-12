@@ -1,6 +1,6 @@
 # Asset tracking — challenge starter
 
-Welcome. **Read [`../docs/CHALLENGE.md`](../docs/CHALLENGE.md) first** — it explains what you're building.
+Welcome. **Read [`../docs/CHALLENGE.md`](../docs/CHALLENGE.md) first** — it explains what you're building. If you want more narrative on *why* this kind of system exists, [`../docs/CONTEXT.md`](../docs/CONTEXT.md) is optional background.
 
 This README is operational: how to install, run, and deploy.
 

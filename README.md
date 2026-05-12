@@ -25,6 +25,7 @@ The starter reads `API_BASE_URL` and `API_TOKEN` from `starter/.env` (defaults: 
 | Document | For |
 |---|---|
 | [`docs/CHALLENGE.md`](./docs/CHALLENGE.md) | The candidate-facing brief |
+| [`docs/CONTEXT.md`](./docs/CONTEXT.md) | Background on the kind of system this is and why each piece exists. Optional. |
 | [`api/README.md`](./api/README.md) | How to run and test the API |
 | [`starter/README.md`](./starter/README.md) | How to run the starter |
 | [`starter/docs/api-reference.md`](./starter/docs/api-reference.md) | The API contract |

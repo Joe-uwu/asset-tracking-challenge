@@ -31,6 +31,8 @@ A multi-site research lab tracks thousands of instruments — sequencers, mass s
 
 They drift apart constantly. Your job is to make all three usable enough that techs don't skip scans and managers can act.
 
+For more narrative on *why* this kind of system exists and how the three pieces are supposed to relate, see [`docs/CONTEXT.md`](./CONTEXT.md). Optional reading — sharpens your judgment on the reconciliation report especially.
+
 ## What to build
 
 ### 1. Scan workflows under `/tech`
