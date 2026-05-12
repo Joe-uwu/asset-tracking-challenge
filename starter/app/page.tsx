@@ -7,7 +7,7 @@ export default function HomePage() {
         <h1 className="text-3xl font-semibold">Asset tracking challenge</h1>
         <p className="text-gray-600 mt-2 max-w-2xl">
           You&apos;re looking at the starter. The hosted API runs separately and is
-          already populated with twelve assets, plus mock facilities and finance
+          already populated with about a thousand assets, plus mock facilities and finance
           data. Use the role switcher in the header to act as either a lab
           technician (mobile) or an asset manager (desktop).
         </p>

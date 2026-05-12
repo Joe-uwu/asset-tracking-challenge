@@ -45,6 +45,7 @@ The starter expects the upstream API at `API_BASE_URL` (default `http://localhos
 | `app/page.tsx` | Landing page. |
 | `docs/api-reference.md` | API contract. |
 | `docs/tips.md` | Notes you'll want to read before coding. |
+| `docs/happy-path.md` | 10-step smoke test. Run before submitting. |
 
 ## What you'll build
 
@@ -70,7 +71,7 @@ These files are stubs you'll replace. Read [`../docs/CHALLENGE.md`](../docs/CHAL
 
 **Barcode tooling (your call where it lives):**
 
-A way to produce scannable barcodes for the 12 seeded tags + a handful of locations. Could be `app/dev/barcodes/page.tsx`, a printable PDF, a script under `scripts/`, whatever fits.
+A way to produce scannable barcodes for a handful of asset tags (pick interesting ones) + a handful of locations. Could be `app/dev/barcodes/page.tsx`, a printable PDF, a script under `scripts/`, whatever fits.
 
 **Your README:**
 

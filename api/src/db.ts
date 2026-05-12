@@ -10,6 +10,7 @@ import type {
   Location,
 } from "./domain/types.js";
 import { SEED_ASSETS } from "./seed/assets.js";
+import { PROCEDURAL_ASSETS } from "./seed/procedural.js";
 import { findTransition } from "./domain/state-machine.js";
 
 const DATA_DIR = process.env.API_DATA_DIR ?? join(process.cwd(), "data");
@@ -87,7 +88,7 @@ function seedDatabase(db: Database.Database): void {
   };
 
   const tx = db.transaction(() => {
-    for (const asset of SEED_ASSETS) {
+    for (const asset of [...SEED_ASSETS, ...PROCEDURAL_ASSETS]) {
       insertAsset.run({
         asset_tag: asset.asset_tag,
         serial: asset.serial,

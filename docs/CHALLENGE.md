@@ -17,7 +17,9 @@ We will read every README. We will watch every Loom. Both count as much as the c
 
 ## How this works
 
-A hosted API holds 12 seeded assets, an event log per asset, three scan endpoints (receive, store, deploy), and two static mocks for facilities and finance. You build the UX on top. `POST /v1/reset` wipes your namespace clean.
+A hosted API holds ~1,000 seeded assets, an event log per asset, three scan endpoints (receive, store, deploy), and two static mocks for facilities and finance. You build the UX on top. `POST /v1/reset` wipes your namespace clean.
+
+Volume matters: at ~1,000 rows your manager list can't just be a dump, your reconciliation report has signal-to-noise, and edge cases on pagination/loading/empty-states actually surface. A dozen of the seeded assets carry deliberately-engineered cross-system disagreements; the rest are clean.
 
 Read [`docs/api-reference.md`](../starter/docs/api-reference.md) — it's the contract.
 
@@ -45,7 +47,7 @@ The API enforces the rules (state machine, idempotency on duplicate receive, loc
 
 Use the included `<ScanInput>` as a starting point or replace it.
 
-**Deliverable: barcodes we can actually scan.** Ship some way — a `/dev/barcodes` page, a printable PDF, a one-shot script, your call — to generate scannable Code 128 (or QR) barcodes for at least the 12 seeded asset tags and a handful of locations. We'll print them and use them in the review call. Don't make us type tags by hand.
+**Deliverable: barcodes we can actually scan.** Ship some way — a `/dev/barcodes` page, a printable PDF, a one-shot script, your call — to generate scannable Code 128 (or QR) barcodes for a handful of assets (covering the interesting cases — drifted, ghost/orphan, disposed) and a handful of locations. We'll print them and use them in the review call. Don't make us type tags by hand. You decide which tags are worth printing.
 
 ### 2. Manager dashboard under `/manager`
 
@@ -99,6 +101,12 @@ Six things. No weights, no rubric.
 - A **3–5 minute Loom** covering: what you built, one call you nearly made the other way, and one piece of microcopy you're proud of.
 
 We'll review and follow up to schedule a 60-minute call.
+
+## A note on what we test
+
+When we review your submission, we'll exercise scenarios beyond the happy path documented here — edge cases, error states, what a tech does the wrong way twice in a row, what a manager sees on their first cold load of a page they've never seen. We deliberately don't enumerate the scenarios. Build for the cases you can imagine us trying, even when we haven't named them. Robustness is taste, too.
+
+A short happy-path checklist lives at [`starter/docs/happy-path.md`](../starter/docs/happy-path.md) — run through it before you submit to make sure the foundation works. It is **not** the test we run.
 
 ## Honest notes
 

@@ -114,7 +114,7 @@ Static mock. Returns finance's view. Different schema again:
 
 ### `POST /v1/reset`
 
-Wipes the database and re-seeds the 12 starter assets. Returns:
+Wipes the database and re-seeds ~1,000 starter assets. Returns:
 
 ```json
 { "ok": true, "reseeded_at": "2026-05-12T17:33:00.000Z" }

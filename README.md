@@ -30,6 +30,7 @@ The starter reads `API_BASE_URL` and `API_TOKEN` from `starter/.env` (defaults: 
 | [`starter/README.md`](./starter/README.md) | How to run the starter |
 | [`starter/docs/api-reference.md`](./starter/docs/api-reference.md) | The API contract |
 | [`starter/docs/tips.md`](./starter/docs/tips.md) | Notes for candidates |
+| [`starter/docs/happy-path.md`](./starter/docs/happy-path.md) | 10-step smoke test for candidates |
 
 ## Testing
 

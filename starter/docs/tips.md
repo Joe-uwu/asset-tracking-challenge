@@ -51,7 +51,7 @@ The page at `/manager/reconcile` should just fetch from `/api/reconcile`.
 
 ## Use the reset endpoint
 
-`POST /v1/reset` wipes the database back to the 12 seeded assets. Hit it before recording your Loom so the demo runs against known state. The starter's `api.reset()` helper does this.
+`POST /v1/reset` wipes the database back to the seeded ~1,000 assets. Hit it before recording your Loom so the demo runs against known state. The starter's `api.reset()` helper does this.
 
 If you want a "reset" button somewhere in the dev UI, that's a reasonable call; just don't leave it in a production-looking surface.
 
