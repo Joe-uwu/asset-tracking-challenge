@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api-client";
+import { getCurrentUserId } from "@/lib/auth";
 
 export default function TechReceivePage() {
   const [assetTag, setAssetTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const userId = getCurrentUserId();
 
   const handleReceive = async () => {
     const trimmedTag = assetTag.trim();
@@ -36,7 +38,7 @@ export default function TechReceivePage() {
           rack: null,
           ru: null,
         },
-        user_id: "",
+        user_id: userId,
         scan_payload: trimmedTag,
       });
       setSuccess(`Received ${trimmedTag}`);

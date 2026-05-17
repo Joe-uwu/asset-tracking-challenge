@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 
 interface CameraScannerProps {
@@ -14,79 +14,119 @@ export function CameraScanner({
   onError,
   onScanComplete,
 }: CameraScannerProps) {
+  const [isStarting, setIsStarting] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const cancelledRef = useRef(false);
 
-  const startScanning = useCallback(async () => {
-    try {
-      setIsInitializing(true);
-      const devices = await Html5Qrcode.getCameras();
-      if (devices && devices.length) {
-        const primaryCamera = devices[0];
-        if (!primaryCamera) return;
-        const config = { fps: 10, qrbox: 250 };
-        html5QrcodeRef.current = new Html5Qrcode("reader");
-        await html5QrcodeRef.current.start(
+  const stopCamera = useCallback(async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+
+    if (scanner) {
+      try {
+        await scanner.stop();
+      } catch (error) {
+        // Ignore stop errors during teardown.
+      }
+
+      try {
+        await scanner.clear();
+      } catch (error) {
+        // Ignore clear errors during teardown.
+      }
+    }
+
+    setIsScanning(false);
+    setIsStarting(false);
+  }, []);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+
+    const startCamera = async () => {
+      try {
+        setIsStarting(true);
+
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+
+        if (cancelledRef.current) {
+          return;
+        }
+
+        const cameras = await Html5Qrcode.getCameras();
+        if (!cameras.length) {
+          setIsStarting(false);
+          onError?.('No cameras found');
+          return;
+        }
+
+        const primaryCamera = cameras[0];
+        if (!primaryCamera) {
+          setIsStarting(false);
+          onError?.('No cameras found');
+          return;
+        }
+
+        const scanner = new Html5Qrcode('qr-reader');
+        scannerRef.current = scanner;
+
+        await scanner.start(
           primaryCamera.id,
-          config,
+          {
+            fps: 10,
+            qrbox: 250,
+          },
           (decodedText: string) => {
             onScan(decodedText);
             onScanComplete?.();
           },
-          (error: string) => {
-            onError?.(`QR Code scanning error: ${error}`);
+          (errorMessage: string) => {
+            onError?.(`QR Code scanning error: ${errorMessage}`);
           }
         );
-        setIsScanning(true);
-        setIsInitializing(false);
-      } else {
-        setIsInitializing(false);
-        onError?.('No cameras found');
-      }
-    } catch (err) {
-      setIsInitializing(false);
-      onError?.(`Error initializing camera: ${err}`);
-    }
-  }, [onScan, onError, onScanComplete]);
 
-  const stopScanning = useCallback(async () => {
-    if (isScanning && html5QrcodeRef.current) {
-      try {
-        await html5QrcodeRef.current.stop();
-        setIsScanning(false);
-        html5QrcodeRef.current = null;
-      } catch (err) {
-        onError?.(`Error stopping camera: ${err}`);
+        if (!cancelledRef.current) {
+          setIsScanning(true);
+          setIsStarting(false);
+        } else {
+          await stopCamera();
+        }
+      } catch (error) {
+        if (!cancelledRef.current) {
+          setIsScanning(false);
+          setIsStarting(false);
+          onError?.(`Error initializing camera: ${error}`);
+        }
       }
-    }
-    setIsScanning(false);
-    setIsInitializing(false);
-  }, [isScanning, onError]);
-
-  useEffect(() => {
-    void startScanning();
-    return () => {
-      void stopScanning();
     };
-  }, [startScanning, stopScanning]);
+
+    void startCamera();
+
+    return () => {
+      cancelledRef.current = true;
+      void stopCamera();
+    };
+  }, [onError, onScan, onScanComplete, stopCamera]);
 
   return (
     <div className="relative w-full min-h-[320px] overflow-hidden rounded-2xl border border-slate-300 bg-black">
       <div
-        id="reader"
-        className="h-[320px] w-full overflow-hidden [&>video]:h-full [&>video]:w-full [&>video]:object-cover [&>video]:bg-black [&>div]:h-full [&>div]:w-full"
+        id="qr-reader"
+        className="h-[320px] w-full overflow-hidden bg-black [&>video]:h-full [&>video]:w-full [&>video]:object-cover [&>video]:bg-black [&>div]:h-full [&>div]:w-full"
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3 text-sm text-white/90">
         Camera viewfinder
       </div>
-      {(!isScanning || isInitializing) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/65">
+      {isStarting && !isScanning ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
           <div className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white">
-            {isInitializing ? "Starting camera..." : "Camera stopped"}
+            Starting camera...
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
