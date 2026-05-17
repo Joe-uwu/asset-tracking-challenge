@@ -15,16 +15,16 @@ export function CameraScanner({
   onScanComplete,
 }: CameraScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
-  const [cameraId, setCameraId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
 
   const startScanning = useCallback(async () => {
     try {
+      setIsInitializing(true);
       const devices = await Html5Qrcode.getCameras();
       if (devices && devices.length) {
         const primaryCamera = devices[0];
         if (!primaryCamera) return;
-        setCameraId(primaryCamera.id);
         const config = { fps: 10, qrbox: 250 };
         html5QrcodeRef.current = new Html5Qrcode("reader");
         await html5QrcodeRef.current.start(
@@ -39,10 +39,13 @@ export function CameraScanner({
           }
         );
         setIsScanning(true);
+        setIsInitializing(false);
       } else {
+        setIsInitializing(false);
         onError?.('No cameras found');
       }
     } catch (err) {
+      setIsInitializing(false);
       onError?.(`Error initializing camera: ${err}`);
     }
   }, [onScan, onError, onScanComplete]);
@@ -52,52 +55,35 @@ export function CameraScanner({
       try {
         await html5QrcodeRef.current.stop();
         setIsScanning(false);
-        setCameraId(null);
         html5QrcodeRef.current = null;
       } catch (err) {
         onError?.(`Error stopping camera: ${err}`);
       }
     }
+    setIsScanning(false);
+    setIsInitializing(false);
   }, [isScanning, onError]);
 
   useEffect(() => {
-    if (cameraId) {
-      startScanning();
-    }
+    void startScanning();
     return () => {
-      stopScanning();
+      void stopScanning();
     };
-  }, [cameraId, startScanning, stopScanning]);
-
-  useEffect(() => {
-    return () => {
-      stopScanning();
-    };
-  }, [stopScanning]);
-
-  if (!isScanning) {
-    return (
-      <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <button
-          onClick={startScanning}
-          className="w-full rounded-xl bg-[#2563eb] px-5 py-4 text-lg font-semibold text-white hover:bg-blue-700"
-        >
-          Start Camera Scan
-        </button>
-      </div>
-    );
-  }
+  }, [startScanning, stopScanning]);
 
   return (
-    <div className="relative w-full min-h-[320px] overflow-hidden rounded-2xl border border-slate-300 bg-slate-950">
-      <div id="reader" className="h-[320px] w-full [&>video]:h-full [&>video]:w-full [&>video]:object-cover [&>div]:h-full [&>div]:w-full" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent px-4 py-3 text-sm text-white/90">
+    <div className="relative w-full min-h-[320px] overflow-hidden rounded-2xl border border-slate-300 bg-black">
+      <div
+        id="reader"
+        className="h-[320px] w-full overflow-hidden [&>video]:h-full [&>video]:w-full [&>video]:object-cover [&>video]:bg-black [&>div]:h-full [&>div]:w-full"
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent px-4 py-3 text-sm text-white/90">
         Camera viewfinder
       </div>
-      {!isScanning && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="text-white text-center">
-            <p>Initializing camera...</p>
+      {(!isScanning || isInitializing) && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/65">
+          <div className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white">
+            {isInitializing ? "Starting camera..." : "Camera stopped"}
           </div>
         </div>
       )}
