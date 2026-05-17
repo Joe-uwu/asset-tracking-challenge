@@ -15,18 +15,33 @@ export default function ManagerReconcilePage() {
   const fetchReport = async () => {
     setLoading(true);
     setError(null);
+    console.log("Fetching reconciliation report...");
     try {
-      const response = await fetch("/api/reconcile");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log("Fetch timed out after 30 seconds");
+        controller.abort();
+      }, 30000);
+
+      const response = await fetch("/api/reconcile", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      console.log("Fetch response status:", response.status);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log("Fetch successful.");
       setReport(data);
     } catch (err: any) {
       console.error("Failed to fetch reconciliation report:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
+      if (err.name === 'AbortError') {
+        setError("The request took too long and timed out.");
+      } else {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
+      }
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,6 @@ import { CameraScanner } from "@/components/CameraScanner";
 import { api } from "@/lib/api-client";
 import { Asset } from "@/lib/types";
 import { getCurrentUserId, roleUserId } from "@/lib/auth";
-import { useApiData, useApiMutation } from "@/lib/swr";
 
 export default function TechTransferPage() {
   const [asset, setAsset] = useState<Asset | null>(null);

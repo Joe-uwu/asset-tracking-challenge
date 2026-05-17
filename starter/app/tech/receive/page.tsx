@@ -6,7 +6,6 @@ import { CameraScanner } from "@/components/CameraScanner";
 import { api } from "@/lib/api-client";
 import { Asset } from "@/lib/types";
 import { getCurrentUserId } from "@/lib/auth";
-import { useApiData, useApiMutation } from "@/lib/swr";
 
 export default function TechReceivePage() {
   const [asset, setAsset] = useState<Asset | null>(null);
@@ -34,8 +33,6 @@ export default function TechReceivePage() {
       ru: null,
     },
   };
-
-  const [receiveTrigger] = useApiMutation<any, any>(`/assets/${Math.random()}`);
 
   const handleScan = async (assetTag: string) => {
     setLoading(true);
@@ -71,12 +68,7 @@ export default function TechReceivePage() {
       };
 
       // Call the receive endpoint
-      const result = await receiveTrigger(
-        async () => {
-          const res = await api.scans.receive(receiveData);
-          return res;
-        }
-      );
+      const result = await api.scans.receive(receiveData);
       setAsset(result);
 
       // Determine if this was a new asset or a duplicate receive
