@@ -74,19 +74,19 @@ export default function ManagerReconcilePage() {
   }, []);
 
   if (loading) {
-    return <div className="p-6">Generating report...</div>;
+    return <div className="p-7 text-sm text-slate-600">Generating report...</div>;
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-bold">Reconciliation Report</h1>
-          <Link href="/manager" className="text-sm text-blue-600 hover:underline">
+      <div className="space-y-5 p-7">
+        <div className="flex items-start justify-between gap-4 rounded-xl bg-[#0f1724] px-6 py-5 text-slate-100">
+          <h1 className="text-2xl font-semibold">Reconciliation Report</h1>
+          <Link href="/manager" className="rounded-lg border border-slate-500 bg-slate-800 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100 hover:bg-slate-700">
             Back to dashboard
           </Link>
         </div>
-        <div className="rounded border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="rounded-xl border border-red-300 bg-red-50 p-5 text-red-900">
           {error}
         </div>
       </div>
@@ -130,32 +130,33 @@ export default function ManagerReconcilePage() {
   let chartOffset = 0;
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6 p-7">
+      <div className="flex flex-col gap-4 rounded-2xl bg-[#0f1724] px-6 py-5 text-slate-100 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-950">Reconciliation Report</h1>
-          <p className="mt-2 text-lg text-slate-600">Generated at {new Date(report.timestamp).toLocaleString()}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Manager operations</p>
+          <h1 className="mt-2 text-3xl font-semibold">Reconciliation Report</h1>
+          <p className="mt-2 text-sm text-slate-300">Generated at {new Date(report.timestamp).toLocaleString()}</p>
         </div>
         <Link
           href="/manager"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-100 transition hover:bg-slate-700"
         >
           Back to dashboard
         </Link>
       </div>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Outcome mix</p>
-            <h2 className="text-2xl font-bold text-slate-950">Three-way reconciliation at a glance</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Outcome mix</p>
+            <h2 className="text-2xl font-semibold text-slate-950">Three-way reconciliation at a glance</h2>
             <p className="max-w-2xl text-base text-slate-600">
               Red items need review, yellow items may be stale because the operations fetch is capped,
               and green items represent the expected gap.
             </p>
           </div>
 
-          <div className="flex flex-col items-center gap-4 rounded-3xl bg-slate-50 p-5">
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
             <svg viewBox="0 0 128 128" className="h-56 w-56" role="img" aria-label="Reconciliation donut chart">
               <circle cx="64" cy="64" r={chartRadius} fill="none" stroke="#e2e8f0" strokeWidth="18" />
               {sections.map((section) => {
@@ -193,9 +194,9 @@ export default function ManagerReconcilePage() {
 
             <div className="grid w-full gap-3 sm:grid-cols-3">
               {sections.map((section) => (
-                <div key={section.key} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">{section.title}</p>
-                  <p className="mt-1 text-2xl font-bold text-slate-950">{section.count}</p>
+                <div key={section.key} className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{section.title}</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-950">{section.count}</p>
                 </div>
               ))}
             </div>
@@ -205,13 +206,13 @@ export default function ManagerReconcilePage() {
 
       <div className="space-y-4">
         {sections.map((section) => (
-          <details key={section.key} className={`group rounded-3xl border shadow-sm ${section.toneClassName}`}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-5 py-4">
+          <details key={section.key} className={`group rounded-xl border ${section.toneClassName}`}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl px-5 py-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-70">{section.title}</p>
-                <p className="mt-1 text-2xl font-bold">{section.count} items</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] opacity-70">{section.title}</p>
+                <p className="mt-1 text-xl font-semibold">{section.count} items</p>
               </div>
-              <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+              <div className="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-700">
                 Tap to expand
               </div>
             </summary>
@@ -219,8 +220,8 @@ export default function ManagerReconcilePage() {
               {section.items.length > 0 ? (
                 <ul className="grid gap-3">
                   {section.items.map((item) => (
-                    <li key={`${section.key}-${item.asset_tag}`} className="rounded-2xl bg-white/80 p-4 shadow-sm">
-                      <div className="text-lg font-semibold text-slate-950">{item.asset_tag}</div>
+                    <li key={`${section.key}-${item.asset_tag}`} className="rounded-lg bg-white/80 p-4">
+                      <div className="text-base font-semibold text-slate-950 [font-family:var(--font-plex-mono)]">{item.asset_tag}</div>
                       <div className="mt-1 text-base text-slate-700">{item.reason}</div>
                     </li>
                   ))}

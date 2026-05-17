@@ -25,26 +25,30 @@ export default function TechLandingPage() {
   ];
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="max-w-3xl space-y-3">
-        <h1 className="text-3xl font-bold text-slate-950">Technician workflows</h1>
-        <p className="text-lg text-slate-600">
-          Choose a workflow to launch a tap-friendly scanning experience built for quick hands-on use.
+    <div className="space-y-8 p-7">
+      <div className="rounded-2xl bg-[#0f1724] px-6 py-5 text-slate-100">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Lab operations</p>
+        <h1 className="mt-2 text-3xl font-semibold">Technician workflows</h1>
+        <p className="mt-2 max-w-3xl text-base text-slate-300">
+          Launch a workflow to capture asset events with scanner-first forms designed for high-throughput bench operations.
         </p>
       </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         {workflows.map((workflow) => (
           <Link
             key={workflow.href}
             href={workflow.href}
-            className="flex h-full flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="group flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-blue-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Open workflow</p>
-              <h2 className="mt-3 text-2xl font-bold text-slate-950">{workflow.title}</h2>
-              <p className="mt-3 text-lg text-slate-600">{workflow.description}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Open workflow</p>
+              <h2 className="mt-3 text-2xl font-semibold text-slate-950">{workflow.title}</h2>
+              <p className="mt-3 text-base text-slate-600">{workflow.description}</p>
             </div>
-            <span className="mt-6 inline-flex items-center text-base font-semibold text-blue-700">Launch now →</span>
+            <span className="mt-6 inline-flex items-center text-sm font-semibold uppercase tracking-[0.14em] text-blue-600 group-hover:text-blue-700">
+              Launch workflow
+            </span>
           </Link>
         ))}
       </div>

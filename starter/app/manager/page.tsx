@@ -15,11 +15,11 @@ type AssetRow = {
 const PAGE_SIZE = 30;
 
 const stateBadgeClasses: Record<string, string> = {
-  in_service: "border-green-200 bg-green-100 text-green-800",
-  stored: "border-yellow-200 bg-yellow-100 text-yellow-800",
-  received: "border-blue-200 bg-blue-100 text-blue-800",
-  disposed: "border-gray-200 bg-gray-100 text-gray-700",
-  rma_pending: "border-red-200 bg-red-100 text-red-800",
+  in_service: "border-green-200/90 bg-green-50 text-green-700",
+  stored: "border-yellow-200/90 bg-yellow-50 text-yellow-700",
+  received: "border-blue-200/90 bg-blue-50 text-blue-700",
+  disposed: "border-slate-300 bg-slate-50 text-slate-600",
+  rma_pending: "border-red-200/90 bg-red-50 text-red-700",
 };
 
 const formatStateLabel = (state: string) => state.replace(/_/g, " ");
@@ -63,21 +63,22 @@ export default function ManagerPage() {
   }, []);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6 p-7">
+      <div className="flex flex-col gap-4 rounded-2xl bg-[#0f1724] px-6 py-5 text-slate-100 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-950">Manager dashboard</h1>
-          <p className="mt-2 text-lg text-slate-600">Showing 30 assets per page.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Manager operations</p>
+          <h1 className="mt-2 text-3xl font-semibold">Asset Inventory</h1>
+          <p className="mt-2 text-base text-slate-300">Data-dense asset view with live state tracking.</p>
         </div>
         <Link
           href="/manager/reconcile"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          className="inline-flex items-center justify-center rounded-xl border border-slate-500 bg-slate-800 px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-100 transition hover:bg-slate-700"
         >
           Three-way reconciliation
         </Link>
       </div>
 
-      {error ? <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-red-800">{error}</div> : null}
+      {error ? <div className="rounded-xl border border-red-300 bg-red-50 p-5 text-red-900">{error}</div> : null}
 
       {loading && assets.length === 0 ? (
         <div className="flex items-center gap-3 py-10">
@@ -85,33 +86,41 @@ export default function ManagerPage() {
           <p className="text-lg text-slate-600">Loading assets...</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50/80">
               <tr>
-                <th className="px-5 py-4 text-left text-sm font-semibold uppercase tracking-[0.15em] text-slate-600">Asset Tag</th>
-                <th className="px-5 py-4 text-left text-sm font-semibold uppercase tracking-[0.15em] text-slate-600">State</th>
-                <th className="px-5 py-4 text-left text-sm font-semibold uppercase tracking-[0.15em] text-slate-600">Custodian</th>
-                <th className="px-5 py-4 text-left text-sm font-semibold uppercase tracking-[0.15em] text-slate-600">Site</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  <span className="inline-flex items-center gap-2">Asset Tag <span className="text-slate-400">↕</span></span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  <span className="inline-flex items-center gap-2">State <span className="text-slate-400">↕</span></span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  <span className="inline-flex items-center gap-2">Custodian <span className="text-slate-400">↕</span></span>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-600">
+                  <span className="inline-flex items-center gap-2">Site <span className="text-slate-400">↕</span></span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {assets.map((asset) => (
-                <tr key={asset.asset_tag} className="hover:bg-slate-50/70">
-                  <td className="px-5 py-4 text-sm font-semibold text-blue-700">
-                    <Link href={`/manager/assets/${asset.asset_tag}`} className="hover:underline">
+                <tr key={asset.asset_tag} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-sm font-semibold text-blue-700 [font-family:var(--font-plex-mono)]">
+                    <Link href={`/manager/assets/${asset.asset_tag}`} className="hover:text-blue-800 hover:underline">
                       {asset.asset_tag}
                     </Link>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-700">
+                  <td className="px-4 py-3 text-sm text-slate-700">
                     <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${stateBadgeClasses[asset.state] ?? "border-slate-200 bg-slate-100 text-slate-700"}`}
+                      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${stateBadgeClasses[asset.state] ?? "border-slate-300 bg-slate-50 text-slate-600"}`}
                     >
                       {formatStateLabel(asset.state)}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-700">{asset.custodian ?? "-"}</td>
-                  <td className="px-5 py-4 text-sm text-slate-700">{asset.location?.site ?? "-"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-700">{asset.custodian ?? "-"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-700">{asset.location?.site ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -123,7 +132,7 @@ export default function ManagerPage() {
         <button
           onClick={() => void fetchAssets(offset, true)}
           disabled={loading || loadingMore || !hasMore}
-          className="w-full rounded-2xl bg-blue-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          className="w-full rounded-xl bg-[#2563eb] px-5 py-4 text-base font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {loadingMore ? "Loading..." : hasMore ? "Load More" : "No more assets"}
         </button>

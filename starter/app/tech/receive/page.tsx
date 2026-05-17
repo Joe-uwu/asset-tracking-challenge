@@ -51,15 +51,16 @@ export default function TechReceivePage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold text-slate-950">Receive Asset</h1>
-        <p className="max-w-3xl text-lg text-slate-600">
-          Scan a tag and press Enter to receive the asset. The screen stays simple and touch-friendly.
+    <div className="space-y-7 p-7">
+      <div className="rounded-2xl bg-[#0f1724] px-6 py-5 text-slate-100">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Step 1 of 1</p>
+        <h1 className="mt-2 text-3xl font-semibold">Receive Asset</h1>
+        <p className="mt-2 max-w-3xl text-base text-slate-300">
+          Scan an asset tag and press Enter to register receipt in the operations system.
         </p>
       </div>
 
-      <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto w-full max-w-3xl space-y-6 rounded-2xl border border-slate-200 bg-white p-7">
         <input
           value={assetTag}
           onChange={(event) => setAssetTag(event.target.value)}
@@ -71,39 +72,39 @@ export default function TechReceivePage() {
           }}
           disabled={loading}
           placeholder="Scan or type asset tag"
-          className="w-full rounded-2xl border-2 border-gray-300 px-4 py-4 text-xl focus:border-blue-600 focus:outline-none disabled:bg-gray-100"
+          className="w-full rounded-xl border border-slate-300 px-4 py-4 text-xl [font-family:var(--font-plex-mono)] focus:border-blue-600 focus:outline-none disabled:bg-slate-100"
         />
         <button
           onClick={() => void handleReceive()}
           disabled={loading}
-          className="w-full rounded-2xl bg-blue-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          className="w-full rounded-xl bg-[#2563eb] px-5 py-4 text-lg font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {loading ? "Receiving..." : "Receive"}
         </button>
         {success ? (
-          <div className="rounded-3xl border border-green-200 bg-green-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-green-800">Success</p>
-            <p className="mt-2 text-lg font-semibold text-green-950">{success}</p>
-            <p className="mt-2 text-base text-green-800">Scan another tag to continue receiving assets.</p>
+          <div className="rounded-xl border border-green-300 bg-green-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-green-800">Success</p>
+            <p className="mt-2 text-lg font-semibold text-green-950 [font-family:var(--font-plex-mono)]">{success}</p>
+            <p className="mt-2 text-base text-green-800">Asset recorded. Continue with the next incoming item.</p>
             <button
               onClick={() => {
                 setAssetTag("");
                 setSuccess(null);
               }}
-              className="mt-4 w-full rounded-2xl bg-green-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-green-700"
+              className="mt-4 w-full rounded-xl bg-[#2563eb] px-5 py-4 text-lg font-semibold text-white transition hover:bg-blue-700"
             >
               Scan Another
             </button>
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-3xl border border-red-200 bg-red-50 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-800">Receive failed</p>
+          <div className="rounded-xl border border-red-300 bg-red-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-800">Receive failed</p>
             <p className="mt-2 text-lg font-semibold text-red-950">{error}</p>
-            <p className="mt-2 text-base text-red-800">Check the tag and try again.</p>
+            <p className="mt-2 text-base text-red-800">Verify the asset tag and resubmit the scan.</p>
             <button
               onClick={() => setError(null)}
-              className="mt-4 w-full rounded-2xl bg-red-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-red-700"
+              className="mt-4 w-full rounded-xl bg-red-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-red-700"
             >
               Try Again
             </button>
