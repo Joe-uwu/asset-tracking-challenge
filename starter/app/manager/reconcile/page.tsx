@@ -103,55 +103,133 @@ export default function ManagerReconcilePage() {
       title: "Needs Review",
       count: report.summary.needs_review,
       items: report.details.needs_review,
-      className: "border-red-200 bg-red-50 text-red-900",
+      color: "#ef4444",
+      toneClassName: "border-red-200 bg-red-50 text-red-950",
     },
     {
       key: "likely_stale_data",
       title: "Likely Stale Data",
       count: report.summary.likely_stale_data,
       items: report.details.likely_stale_data,
-      className: "border-yellow-200 bg-yellow-50 text-yellow-900",
+      color: "#eab308",
+      toneClassName: "border-yellow-200 bg-yellow-50 text-yellow-950",
     },
     {
       key: "expected_gap",
       title: "Expected Gap",
       count: report.summary.expected_gap,
       items: report.details.expected_gap,
-      className: "border-green-200 bg-green-50 text-green-900",
+      color: "#22c55e",
+      toneClassName: "border-green-200 bg-green-50 text-green-950",
     },
   ];
 
+  const totalItems = sections.reduce((sum, section) => sum + section.count, 0);
+  const chartRadius = 42;
+  const chartCircumference = 2 * Math.PI * chartRadius;
+  let chartOffset = 0;
+
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <h1 className="text-2xl font-bold">Reconciliation Report</h1>
-        <Link href="/manager" className="text-sm text-blue-600 hover:underline">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-950">Reconciliation Report</h1>
+          <p className="mt-2 text-lg text-slate-600">Generated at {new Date(report.timestamp).toLocaleString()}</p>
+        </div>
+        <Link
+          href="/manager"
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+        >
           Back to dashboard
         </Link>
       </div>
 
-      <p className="mb-6 text-sm text-gray-500">Generated at {new Date(report.timestamp).toLocaleString()}</p>
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Outcome mix</p>
+            <h2 className="text-2xl font-bold text-slate-950">Three-way reconciliation at a glance</h2>
+            <p className="max-w-2xl text-base text-slate-600">
+              Red items need review, yellow items may be stale because the operations fetch is capped,
+              and green items represent the expected gap.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center gap-4 rounded-3xl bg-slate-50 p-5">
+            <svg viewBox="0 0 128 128" className="h-56 w-56" role="img" aria-label="Reconciliation donut chart">
+              <circle cx="64" cy="64" r={chartRadius} fill="none" stroke="#e2e8f0" strokeWidth="18" />
+              {sections.map((section) => {
+                if (section.count === 0 || totalItems === 0) {
+                  return null;
+                }
+
+                const segmentLength = (section.count / totalItems) * chartCircumference;
+                const segment = (
+                  <circle
+                    key={section.key}
+                    cx="64"
+                    cy="64"
+                    r={chartRadius}
+                    fill="none"
+                    stroke={section.color}
+                    strokeWidth="18"
+                    strokeDasharray={`${segmentLength} ${chartCircumference - segmentLength}`}
+                    strokeDashoffset={-chartOffset}
+                    strokeLinecap="butt"
+                    transform="rotate(-90 64 64)"
+                  />
+                );
+
+                chartOffset += segmentLength;
+                return segment;
+              })}
+              <text x="64" y="60" textAnchor="middle" className="fill-slate-950 text-3xl font-bold">
+                {totalItems}
+              </text>
+              <text x="64" y="78" textAnchor="middle" className="fill-slate-500 text-sm font-semibold uppercase tracking-[0.16em]">
+                Total
+              </text>
+            </svg>
+
+            <div className="grid w-full gap-3 sm:grid-cols-3">
+              {sections.map((section) => (
+                <div key={section.key} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">{section.title}</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-950">{section.count}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="space-y-4">
         {sections.map((section) => (
-          <section key={section.key} className={`rounded border p-4 ${section.className}`}>
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <h2 className="text-lg font-semibold">{section.title}</h2>
-              <span className="text-sm font-medium">{section.count}</span>
+          <details key={section.key} className={`group rounded-3xl border shadow-sm ${section.toneClassName}`}>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-5 py-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-70">{section.title}</p>
+                <p className="mt-1 text-2xl font-bold">{section.count} items</p>
+              </div>
+              <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
+                Tap to expand
+              </div>
+            </summary>
+            <div className="border-t border-current/10 px-5 py-4">
+              {section.items.length > 0 ? (
+                <ul className="grid gap-3">
+                  {section.items.map((item) => (
+                    <li key={`${section.key}-${item.asset_tag}`} className="rounded-2xl bg-white/80 p-4 shadow-sm">
+                      <div className="text-lg font-semibold text-slate-950">{item.asset_tag}</div>
+                      <div className="mt-1 text-base text-slate-700">{item.reason}</div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-base text-slate-700">No items in this category.</p>
+              )}
             </div>
-            {section.items.length > 0 ? (
-              <ul className="space-y-2">
-                {section.items.map((item) => (
-                  <li key={`${section.key}-${item.asset_tag}`} className="rounded bg-white/70 p-3">
-                    <div className="font-medium">{item.asset_tag}</div>
-                    <div className="text-sm">{item.reason}</div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm">No items in this category.</p>
-            )}
-          </section>
+          </details>
         ))}
       </div>
     </div>

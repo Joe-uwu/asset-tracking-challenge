@@ -20,6 +20,7 @@ export default function TechStorePage() {
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
 
   const userId = getCurrentUserId();
+  const stepLabel = phase === "asset" ? "Step 1 of 2" : "Step 2 of 2";
 
   const resetForm = () => {
     setAsset(null);
@@ -121,19 +122,6 @@ export default function TechStorePage() {
     }
   };
 
-  // Handle Enter key on location input to submit
-  const handleLocationKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && location) {
-      // We'll trigger the location scan handler with the current location value
-      // But note: we are in the location phase, and the ScanInput is controlled by the location state.
-      // We can call handleLocationScan with the current location value.
-      // However, we are already in the submitting phase when we have a location.
-      // Actually, we set the location on scan, then we go to submitting.
-      // So we don't need to handle Enter here because the ScanInput already calls onScan on Enter.
-      // We'll leave this empty for now.
-    }
-  };
-
   const handleCameraScan = (decodedText: string) => {
     if (phase === "asset") {
       handleAssetScan(decodedText);
@@ -143,52 +131,72 @@ export default function TechStorePage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-start mb-4">
-        <h1 className="text-2xl font-bold">Store Asset</h1>
-        <p className="text-sm text-gray-500">
-          Scan an asset tag, then scan a storage location to store the asset.
+    <div className="space-y-6 p-6">
+      <div className="space-y-3">
+        <h1 className="text-3xl font-bold text-slate-950">Store Asset</h1>
+        <p className="max-w-3xl text-lg text-slate-600">
+          Scan the asset, then scan the storage location. The workflow keeps each step large and explicit for fast use.
         </p>
       </div>
 
-      <div className="mb-4 flex items-center space-x-4">
-        <label className="text-sm font-medium mr-2">Scan Method:</label>
-        <button
-          onClick={() => setScanMethod("keyboard")}
-          className={`px-3 py-1 rounded ${scanMethod === "keyboard" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"} hover:bg-blue-700`}
-        >
-          Keyboard/Scanner
-        </button>
-        {!cameraPermissionGranted && (
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">{stepLabel}</p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-950">
+              {phase === "asset" ? "Scan the asset tag" : "Scan the storage location"}
+            </h2>
+            <p className="mt-2 text-base text-slate-600">
+              {phase === "asset"
+                ? "Start by identifying the asset before moving to storage details."
+                : "Confirm the site or storage location to finish the store action."}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700">
+            Current user: {userId}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
-            onClick={() => {
-              // Request camera permission
-              navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => setCameraPermissionGranted(true))
-                .catch(() => {
-                  alert("Camera permission denied. Please enable camera access.");
-                });
-            }}
-            className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+            onClick={() => setScanMethod("keyboard")}
+            className={`w-full rounded-2xl border px-5 py-4 text-lg font-semibold transition ${scanMethod === "keyboard" ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}
           >
-            Enable Camera
+            Keyboard / Scanner
           </button>
-        )}
-        {cameraPermissionGranted && (
+          {!cameraPermissionGranted ? (
+            <button
+              onClick={() => {
+                navigator.mediaDevices
+                  .getUserMedia({ video: true })
+                  .then(() => setCameraPermissionGranted(true))
+                  .catch(() => {
+                    alert("Camera permission denied. Please enable camera access.");
+                  });
+              }}
+              className="w-full rounded-2xl border border-emerald-200 bg-emerald-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Enable Camera
+            </button>
+          ) : (
+            <button
+              onClick={() => setScanMethod("camera")}
+              className={`w-full rounded-2xl border px-5 py-4 text-lg font-semibold transition ${scanMethod === "camera" ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}
+            >
+              Camera
+            </button>
+          )}
           <button
-            onClick={() => setScanMethod("camera")}
-            className={`px-3 py-1 rounded ${scanMethod === "camera" ? "bg-green-600 text-white" : "bg-gray-200 text-gray-800"} hover:bg-green-700`}
+            onClick={resetForm}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
-            Camera
+            Reset
           </button>
-        )}
-      </div>
+        </div>
+      </section>
 
       {phase === "asset" && (
-        <>
-          <label className="block text-sm font-medium mb-2">
-            Current User: <span className="font-mono">{userId}</span>
-          </label>
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <ScanInput
             onScan={handleAssetScan}
             placeholder="Scan asset tag and press Enter..."
@@ -196,73 +204,62 @@ export default function TechStorePage() {
             disabled={loading}
             autoFocus={true}
           />
-        </>
+        </section>
       )}
 
       {phase === "location" && asset && (
-        <>
-          <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500">
-            <p className="text-blue-800 font-medium">
-              Asset {asset.asset_tag} is currently {asset.state.replace(
-                "_",
-                " "
-              )}
+        <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Asset ready</p>
+            <h3 className="mt-2 text-2xl font-bold text-blue-950">{asset.asset_tag}</h3>
+            <p className="mt-2 text-lg text-blue-900">
+              Currently {asset.state.replace("_", " ")} · {asset.model} by {asset.manufacturer}
             </p>
-            <div className="mt-2 space-y-1 text-sm text-blue-600">
-              <div>{asset.model} by {asset.manufacturer}</div>
-              <div>Serial: {asset.serial}</div>
-            </div>
+            <p className="mt-1 text-base text-blue-800">Serial: {asset.serial}</p>
           </div>
 
-          <label className="block text-sm font-medium mb-2">
-            Scan Storage Location (Site)
-          </label>
-          <div className="mb-2">
+          <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
             <ScanInput
               onScan={handleLocationScan}
-              placeholder="Scan storage location (site) and press Enter..."
+              placeholder="Scan storage location and press Enter..."
               label="Location"
               disabled={loading}
               autoFocus={true}
             />
+            {location ? <p className="mt-3 text-base text-slate-600">Scanned location: {location}</p> : null}
           </div>
-          {location && (
-            <p className="mt-2 text-sm text-gray-600">
-              Scanned location: {location}
-            </p>
-          )}
-        </>
-      )}
 
-      {phase === "location" && asset && cameraPermissionGranted && (
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-2">
-            Or use camera to scan location
-          </label>
-          <CameraScanner
-            onScan={handleLocationScan}
-            onError={(errorMsg) => setError({ code: "camera_error", message: errorMsg })}
-            onScanComplete={() => {
-              // Optionally provide haptic feedback or sound on successful scan
-              // navigator.vibrate?.(50);
-            }}
-          />
-        </div>
+          {cameraPermissionGranted && scanMethod === "camera" ? (
+            <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
+              <p className="mb-3 text-base font-semibold text-slate-800">Use the camera instead of the keyboard scanner</p>
+              <CameraScanner
+                onScan={handleCameraScan}
+                onError={(errorMsg) => setError({ code: "camera_error", message: errorMsg })}
+                onScanComplete={() => {
+                  // Optionally provide haptic feedback or sound on successful scan
+                  // navigator.vibrate?.(50);
+                }}
+              />
+            </div>
+          ) : null}
+        </section>
       )}
 
       {phase === "submitting" && (
-        <div className="mt-4 flex items-center space-x-2">
-          <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm text-gray-600">Storing asset...</span>
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-700 shadow-sm">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <span>Storing asset...</span>
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-3 rounded-lg bg-green-50 border-l-4 border-green-500">
-          <p className="text-green-800">{success}</p>
+        <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-green-800">Success</p>
+          <p className="mt-2 text-lg font-semibold text-green-950">{success}</p>
+          <p className="mt-2 text-base text-green-800">Use the button below to start the next scan.</p>
           <button
             onClick={resetForm}
-            className="mt-2 px-3 py-1 bg-green-600 text-white rounded text-sm"
+            className="mt-4 w-full rounded-2xl bg-green-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-green-700"
           >
             Scan Another
           </button>
@@ -270,26 +267,27 @@ export default function TechStorePage() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500">
-          <p className="text-red-800 font-medium">Error {error.code}</p>
-          <p className="mt-1 text-red-700">{error.message}</p>
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-800">Error {error.code}</p>
+          <p className="mt-2 text-lg font-semibold text-red-950">{error.message}</p>
+          <p className="mt-2 text-base text-red-800">Review the details below and try the step again.</p>
           {error.details && error.code === "invalid_transition" && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded">
-              <p className="text-yellow-800 text-sm">
+            <div className="mt-4 rounded-2xl bg-yellow-50 p-4">
+              <p className="text-base font-medium text-yellow-900">
                 Tip: Make sure the asset is in 'received' or 'in_service' state before storing.
               </p>
             </div>
           )}
           {error.details && error.code === "429" && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded">
-              <p className="text-yellow-800 text-sm">
+            <div className="mt-4 rounded-2xl bg-yellow-50 p-4">
+              <p className="text-base font-medium text-yellow-900">
                 Tip: The system is experiencing high demand. Please wait a moment and try again.
               </p>
             </div>
           )}
           <button
             onClick={resetForm}
-            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm"
+            className="mt-4 w-full rounded-2xl bg-red-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-red-700"
           >
             Try Again
           </button>

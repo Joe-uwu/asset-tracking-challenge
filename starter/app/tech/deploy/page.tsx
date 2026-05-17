@@ -16,15 +16,14 @@ export default function TechDeployPage() {
     ru: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ code: string; message: string; details?: Record<string, unknown> } | null>(
-    null
-  );
+  const [error, setError] = useState<{ code: string; message: string; details?: Record<string, unknown> } | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [phase, setPhase] = useState<"asset" | "location" | "submitting">("asset");
   const [scanMethod, setScanMethod] = useState<"keyboard" | "camera">("keyboard");
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
 
   const userId = getCurrentUserId();
+  const stepLabel = phase === "asset" ? "Step 1 of 2" : "Step 2 of 2";
 
   const resetForm = () => {
     setAsset(null);
@@ -38,6 +37,7 @@ export default function TechDeployPage() {
     setLoading(true);
     setError(null);
     setSuccess(null);
+
     try {
       const assetData = await api.assets.get(assetTag);
       setAsset(assetData);
@@ -48,13 +48,13 @@ export default function TechDeployPage() {
         setError({
           code: err.code,
           message: `Asset not found: No record exists for tag ${assetTag}. Please verify the tag and try again.`,
-          details: err.details
+          details: err.details,
         });
       } else {
         setError({
           code: err.code || "unknown_error",
           message: err.message || "An unknown error occurred",
-          details: err.details
+          details: err.details,
         });
       }
     } finally {
@@ -63,48 +63,39 @@ export default function TechDeployPage() {
   };
 
   const handleLocationScan = async (locationString: string) => {
-    // Parse the location string to extract components
-    // Expected format: "Site/Room/Row/Rack/RU" or similar
-    const parts = locationString.split("/").filter(part => part.length > 0);
+    const parts = locationString.split("/").filter((part) => part.length > 0);
 
-    // For deploy, we need site, room, rack, and RU
-    // In a real implementation, we'd have a more sophisticated parser
     if (parts.length < 4) {
       setError({
         code: "invalid_location",
         message: "Location must include site, room, rack, and RU (format: Site/Room/Row/Rack/RU)",
-        details: { received: locationString }
+        details: { received: locationString },
       });
       return;
     }
 
-    setLocationParts({
+    const parsedLocation = {
       site: parts[0] || "",
       room: parts[1] || "",
       rack: (parts.length > 2 ? parts[2] : "") || "",
       ru: (parts.length > 3 ? parts[3] : "") || "",
-    });
+    };
 
+    setLocationParts(parsedLocation);
     setPhase("submitting");
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Validate that we have the required fields for deploy
-      if (!locationParts?.site || !locationParts?.room || !locationParts?.rack || !locationParts?.ru) {
-        throw new Error("Deploy location must include site, room, rack, and RU");
-      }
-
       const locationData = {
-        site: locationParts.site,
-        room: locationParts.room || null,
-        row: null, // We're not capturing row in our simple parser
-        rack: locationParts.rack ?? "",
-        ru: locationParts.ru ?? "",
+        site: parsedLocation.site,
+        room: parsedLocation.room || null,
+        row: null,
+        rack: parsedLocation.rack || "",
+        ru: parsedLocation.ru || "",
       };
 
-      // First, deploy the asset
       const deployResult = await api.scans.deploy({
         asset_tag: asset?.asset_tag ?? "",
         location: locationData,
@@ -114,28 +105,26 @@ export default function TechDeployPage() {
 
       setAsset(deployResult);
 
-      // Then write back to facilities (set rack location) and finance (capitalize)
-      // Using Promise.allSettled to parallelize updates
       const [facilitiesResult, financeResult] = await Promise.allSettled([
         api.mock.updateFacilities({
           tagged_id: deployResult.asset_tag,
-          rack_location: `${locationData.site}/${locationData.room || 'Unspecified'}/${locationData.row || 'Unspecified'}/${locationData.rack}/${locationData.ru}`,
+          rack_location: `${locationData.site}/${locationData.room || "Unspecified"}/${locationData.row || "Unspecified"}/${locationData.rack}/${locationData.ru}`,
         }),
         api.mock.updateFinance({
           tag: deployResult.asset_tag,
           status: "capitalized",
-        })
+        }),
       ]);
 
       let writeBackMessage = "Asset deployed successfully.";
       let hasWriteBackError = false;
 
-      if (facilitiesResult.status === 'rejected') {
+      if (facilitiesResult.status === "rejected") {
         hasWriteBackError = true;
         writeBackMessage += " Facilities synchronization failed.";
       }
 
-      if (financeResult.status === 'rejected') {
+      if (financeResult.status === "rejected") {
         hasWriteBackError = true;
         writeBackMessage += " ERP financial synchronization failed.";
       }
@@ -152,42 +141,29 @@ export default function TechDeployPage() {
         setError({
           code: err.code,
           message: `Cannot deploy asset in current state: ${asset?.state}. Deploy is only allowed from 'stored' state`,
-          details: err.details
+          details: err.details,
         });
       } else if (err.code === "incomplete_deploy_location") {
         setError({
           code: err.code,
           message: `Deploy location incomplete. Missing: ${err.details?.missingFields?.join(", ") ?? "site/room/rack/ru"}`,
-          details: err.details
+          details: err.details,
         });
       } else if (err.status === 429) {
         setError({
           code: err.code,
           message: "System is busy. Please wait a moment and try again.",
-          details: err.details
+          details: err.details,
         });
       } else {
         setError({
           code: err.code || "unknown_error",
           message: err.message || "An unknown error occurred",
-          details: err.details
+          details: err.details,
         });
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handle Enter key on location input to submit
-  const handleLocationKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && locationParts) {
-      // We'll trigger the location scan handler with the current location value
-      // But note: we are in the location phase, and the ScanInput is controlled by the location state.
-      // We can call handleLocationScan with the current location value.
-      // However, we are already in the submitting phase when we have a location.
-      // Actually, we set the location on scan, then we go to submitting.
-      // So we don't need to handle Enter here because the ScanInput already calls onScan on Enter.
-      // We'll leave this empty for now.
     }
   };
 
@@ -200,52 +176,72 @@ export default function TechDeployPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-start mb-4">
-        <h1 className="text-2xl font-bold">Deploy Asset</h1>
-        <p className="text-sm text-gray-500">
-          Scan an asset tag, then scan a deploy location (must include site, rack, and RU) to deploy the asset.
+    <div className="space-y-6 p-6">
+      <div className="space-y-3">
+        <h1 className="text-3xl font-bold text-slate-950">Deploy Asset</h1>
+        <p className="max-w-3xl text-lg text-slate-600">
+          Scan an asset tag, then scan a deploy location. The page keeps the interaction wide, clear, and touch-friendly.
         </p>
       </div>
 
-      <div className="mb-4 flex items-center space-x-4">
-        <label className="text-sm font-medium mr-2">Scan Method:</label>
-        <button
-          onClick={() => setScanMethod("keyboard")}
-          className={`px-3 py-1 rounded ${scanMethod === "keyboard" ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"} hover:bg-blue-700`}
-        >
-          Keyboard/Scanner
-        </button>
-        {!cameraPermissionGranted && (
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">{stepLabel}</p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-950">
+              {phase === "asset" ? "Scan the asset tag" : "Scan the deploy location"}
+            </h2>
+            <p className="mt-2 text-base text-slate-600">
+              {phase === "asset"
+                ? "Identify the item before scanning the final location details."
+                : "Use a site/room/rack/RU style location so deployment can be recorded accurately."}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700">
+            Current user: {userId}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
-            onClick={() => {
-              // Request camera permission
-              navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => setCameraPermissionGranted(true))
-                .catch(() => {
-                  alert("Camera permission denied. Please enable camera access.");
-                });
-            }}
-            className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+            onClick={() => setScanMethod("keyboard")}
+            className={`w-full rounded-2xl border px-5 py-4 text-lg font-semibold transition ${scanMethod === "keyboard" ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}
           >
-            Enable Camera
+            Keyboard / Scanner
           </button>
-        )}
-        {cameraPermissionGranted && (
+          {!cameraPermissionGranted ? (
+            <button
+              onClick={() => {
+                navigator.mediaDevices
+                  .getUserMedia({ video: true })
+                  .then(() => setCameraPermissionGranted(true))
+                  .catch(() => {
+                    alert("Camera permission denied. Please enable camera access.");
+                  });
+              }}
+              className="w-full rounded-2xl border border-emerald-200 bg-emerald-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Enable Camera
+            </button>
+          ) : (
+            <button
+              onClick={() => setScanMethod("camera")}
+              className={`w-full rounded-2xl border px-5 py-4 text-lg font-semibold transition ${scanMethod === "camera" ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"}`}
+            >
+              Camera
+            </button>
+          )}
           <button
-            onClick={() => setScanMethod("camera")}
-            className={`px-3 py-1 rounded ${scanMethod === "camera" ? "bg-green-600 text-white" : "bg-gray-200 text-gray-800"} hover:bg-green-700`}
+            onClick={resetForm}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
           >
-            Camera
+            Reset
           </button>
-        )}
-      </div>
+        </div>
+      </section>
 
       {phase === "asset" && (
-        <>
-          <label className="block text-sm font-medium mb-2">
-            Current User: <span className="font-mono">{userId}</span>
-          </label>
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <ScanInput
             onScan={handleAssetScan}
             placeholder="Scan asset tag and press Enter..."
@@ -253,79 +249,65 @@ export default function TechDeployPage() {
             disabled={loading}
             autoFocus={true}
           />
-        </>
+        </section>
       )}
 
       {phase === "location" && asset && (
-        <>
-          <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-500">
-            <p className="text-blue-800 font-medium">
-              Asset {asset.asset_tag} is currently {asset.state.replace(
-                "_",
-                " "
-              )}
+        <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-700">Asset ready</p>
+            <h3 className="mt-2 text-2xl font-bold text-blue-950">{asset.asset_tag}</h3>
+            <p className="mt-2 text-lg text-blue-900">
+              Currently {asset.state.replace("_", " ")} · {asset.model} by {asset.manufacturer}
             </p>
-            <div className="mt-2 space-y-1 text-sm text-blue-600">
-              <div>{asset.model} by {asset.manufacturer}</div>
-              <div>Serial: {asset.serial}</div>
-              <div>
-                Current Location: {asset.location.site} {asset.location.room ? `-${asset.location.room}` : ""}{" "}
-                {asset.location.rack ? `-${asset.location.rack}` : ""}{" "}
-                {asset.location.ru ? `RU${asset.location.ru}` : ""}
-              </div>
-            </div>
+            <p className="mt-1 text-base text-blue-800">Serial: {asset.serial}</p>
           </div>
 
-          <label className="block text-sm font-medium mb-2">
-            Scan Deploy Location (Format: Site/Room/Row/Rack/RU)
-          </label>
-          <div className="mb-2">
+          <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
             <ScanInput
               onScan={handleLocationScan}
               placeholder="Scan location and press Enter..."
               label="Location"
               disabled={loading}
+              autoFocus={true}
             />
-          </div>
-          {locationParts && (
-            <div className="mb-2 p-2 bg-blue-50 rounded">
-              <p className="text-sm text-blue-600">
+            {locationParts ? (
+              <p className="mt-3 text-base text-slate-600">
                 Parsed location: {locationParts.site}/{locationParts.room}/{locationParts.rack}/{locationParts.ru}
               </p>
-            </div>
-          )}
-        </>
-      )}
+            ) : null}
+          </div>
 
-      {phase === "location" && asset && cameraPermissionGranted && (
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-2">
-            Or use camera to scan location
-          </label>
-          <CameraScanner
-            onScan={handleLocationScan}
-            onError={(errorMsg) => setError({ code: "camera_error", message: errorMsg })}
-            onScanComplete={() => {
-              // Optionally provide haptic feedback or sound on successful scan
-              // navigator.vibrate?.(50);
-            }}
-          />
-        </div>
+          {cameraPermissionGranted && scanMethod === "camera" ? (
+            <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm">
+              <p className="mb-3 text-base font-semibold text-slate-800">Use the camera instead of the keyboard scanner</p>
+              <CameraScanner
+                onScan={handleCameraScan}
+                onError={(errorMsg) => setError({ code: "camera_error", message: errorMsg })}
+                onScanComplete={() => {
+                  // Optionally provide haptic feedback or sound on successful scan
+                }}
+              />
+            </div>
+          ) : null}
+        </section>
       )}
 
       {phase === "submitting" && (
-        <div className="mt-4 flex items-center space-x-2">
-          <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm text-gray-600">Deploying asset...</span>
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-700 shadow-sm">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <span>Deploying asset...</span>
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-3 rounded-lg bg-green-50 border-l-4 border-green-500">
-          <p className="text-green-800">{success}</p>
+        <div className="rounded-3xl border border-green-200 bg-green-50 p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-green-800">Success</p>
+          <p className="mt-2 text-lg font-semibold text-green-950">{success}</p>
+          <p className="mt-2 text-base text-green-800">Use the button below to start the next scan.</p>
           <button
             onClick={resetForm}
-            className="mt-2 px-3 py-1 bg-green-600 text-white rounded text-sm"
+            className="mt-4 w-full rounded-2xl bg-green-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-green-700"
           >
             Scan Another
           </button>
@@ -333,34 +315,35 @@ export default function TechDeployPage() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500">
-          <p className="text-red-800 font-medium">Error {error.code}</p>
-          <p className="mt-1 text-red-700">{error.message}</p>
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-800">Error {error.code}</p>
+          <p className="mt-2 text-lg font-semibold text-red-950">{error.message}</p>
+          <p className="mt-2 text-base text-red-800">Review the details below and try the step again.</p>
           {error.details && error.code === "incomplete_deploy_location" && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded">
-              <p className="text-yellow-800 text-sm">
-                Tip: For deployment, you need to scan a location that includes site, room, rack, and RU.
-                Example format: "Lab-Building-A/Lab-1/A/Rack-5/23"
+            <div className="mt-4 rounded-2xl bg-yellow-50 p-4">
+              <p className="text-base font-medium text-yellow-900">
+                Tip: For deployment, you need a location that includes site, room, rack, and RU.
+                Example: "Lab-Building-A/Lab-1/A/Rack-5/23"
               </p>
             </div>
           )}
           {error.details && error.code === "invalid_transition" && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded">
-              <p className="text-yellow-800 text-sm">
-                Tip: Make sure the asset is in 'stored' state before deploying. Receive the asset first, then store it before deploying.
+            <div className="mt-4 rounded-2xl bg-yellow-50 p-4">
+              <p className="text-base font-medium text-yellow-900">
+                Tip: Make sure the asset is in 'stored' state before deploying. Receive the asset first, then store it.
               </p>
             </div>
           )}
           {error.details && error.code === "429" && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded">
-              <p className="text-yellow-800 text-sm">
+            <div className="mt-4 rounded-2xl bg-yellow-50 p-4">
+              <p className="text-base font-medium text-yellow-900">
                 Tip: The system is experiencing high demand. Please wait a moment and try again.
               </p>
             </div>
           )}
           <button
             onClick={resetForm}
-            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm"
+            className="mt-4 w-full rounded-2xl bg-red-600 px-5 py-4 text-lg font-semibold text-white transition hover:bg-red-700"
           >
             Try Again
           </button>
