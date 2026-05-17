@@ -1,380 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { useApiData } from "@/lib/swr";
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Asset } from "@/lib/types";
 
-type ReconciliationData = {
-  timestamp: string;
-  summary: {
-    in_sync: number;
-    missing_from_finance: number;
-    missing_from_facilities: number;
-    only_in_operations: number;
-    only_in_facilities: number;
-    only_in_finance: number;
-  };
-  details: {
-    in_sync: Array<{ asset_tag: string }>;
-    missing_from_finance: Array<{ asset_tag: string }>;
-    missing_from_facilities: Array<{ asset_tag: string }>;
-    only_in_operations: Array<{ asset_tag: string }>;
-    only_in_facilities: Array<{ asset_tag: string }>;
-    only_in_finance: Array<{ asset_tag: string }>;
-  };
-};
+const PAGE_SIZE = 30;
 
 export default function ManagerPage() {
-  return (
-    <Suspense fallback={<div className="p-6">Loading...</div>}>
-      <ManagerPageContent />
-    </Suspense>
-  );
-}
-
-function ManagerPageContent() {
-  const { data: reconciliation, isLoading, error } = useApiData<ReconciliationData>(
-    "/api/reconcile"
-  );
-
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  // Parse initial filters and page from URL
-  const [filters, setFilters] = useState<{
-    state?: string;
-    site?: string;
-    custodian?: string;
-    page: number;
-  }>({
-    state: searchParams.get("state") || undefined,
-    site: searchParams.get("site") || undefined,
-    custodian: searchParams.get("custodian") || undefined,
-    page: parseInt(searchParams.get("page") || "1"),
-  });
-
-  const limit = 30;
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [isLoadingAssets, setIsLoadingAssets] = useState(false);
-  const [totalAssets, setTotalAssets] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Update URL when filters or page change
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (filters.state) params.set("state", filters.state);
-    if (filters.site) params.set("site", filters.site);
-    if (filters.custodian) params.set("custodian", filters.custodian);
-    params.set("page", filters.page.toString());
-    const newPath = `${window.location.pathname}?${params.toString()}`;
-    router.push(newPath);
-  }, [filters.state, filters.site, filters.custodian, filters.page, router]);
+  const fetchAssets = async (nextOffset: number, append: boolean) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
 
-  // Fetch assets with filters (all matching assets) and then paginate client-side
-  useEffect(() => {
-    const fetchAssets = async () => {
-      setIsLoadingAssets(true);
-      try {
-        const queryParams = new URLSearchParams({
-          state: filters.state ?? "",
-          site: filters.site ?? "",
-          custodian: filters.custodian ?? "",
-        });
+    setError(null);
 
-        const response = await fetch(`/api/upstream/assets?${queryParams}`);
+    try {
+      const response = await fetch(
+        `/api/upstream/assets?limit=${PAGE_SIZE}&offset=${nextOffset}`,
+        { cache: "no-store" }
+      );
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch assets: ${response.status}`);
-        }
-
-        const allAssets: Asset[] = await response.json();
-        setTotalAssets(allAssets.length);
-        setTotalPages(Math.ceil(allAssets.length / limit));
-
-        // Slice for current page
-        const startIndex = (filters.page - 1) * limit;
-        const endIndex = startIndex + limit;
-        setAssets(allAssets.slice(startIndex, endIndex));
-      } catch (error) {
-        console.error("Error fetching assets:", error);
-        // In a real app, we might want to show an error state
-      } finally {
-        setIsLoadingAssets(false);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch assets: ${response.status}`);
       }
-    };
 
-    if (reconciliation) {
-      fetchAssets();
-    }
-  }, [reconciliation, filters.state, filters.site, filters.custodian, filters.page, limit]);
-
-  // Helper functions for pagination
-  const prevPage = () => {
-    if (filters.page > 1) {
-      setFilters((prev) => ({ ...prev, page: prev.page - 1 }));
+      const pageAssets: Asset[] = await response.json();
+      setAssets((currentAssets) =>
+        append ? [...currentAssets, ...pageAssets] : pageAssets
+      );
+      setOffset(nextOffset + pageAssets.length);
+      setHasMore(pageAssets.length === PAGE_SIZE);
+    } catch (fetchError) {
+      console.error("Manager page fetch failed:", fetchError);
+      setError(
+        fetchError instanceof Error
+          ? fetchError.message
+          : "An unknown error occurred"
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  const nextPage = () => {
-    if (filters.page < totalPages) {
-      setFilters((prev) => ({ ...prev, page: prev.page + 1 }));
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h1 className="text-2xl font-bold">Manager dashboard</h1>
-          <Link
-            href="/manager/reconcile"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Three-way reconciliation
-          </Link>
-        </div>
-        <div className="flex items-center space-x-3 py-8">
-          <div className="h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm text-gray-600">Loading dashboard...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h1 className="text-2xl font-bold">Manager dashboard</h1>
-          <Link
-            href="/manager/reconcile"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Three-way reconciliation
-          </Link>
-        </div>
-        <div className="bg-red-50 border-l-4 border-red-500 p-4">
-          <p className="text-red-800 font-medium">Error loading dashboard</p>
-          <p className="mt-2 text-red-700">{error}</p>
-          <button
-            onClick={() => {
-              // Trigger refetch
-              // Note: SWR automatically retries, but we can trigger a refetch by changing the key if needed
-              // We'll just rely on SWR's retry mechanism for now.
-            }}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!reconciliation) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h1 className="text-2xl font-bold">Manager dashboard</h1>
-          <Link
-            href="/manager/reconcile"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Three-way reconciliation
-          </Link>
-        </div>
-        <p className="text-center py-8 text-gray-500">
-          No data available
-        </p>
-      </div>
-    );
-  }
-
-  // Calculate KPIs for the executive snapshot
-  const totalActiveDrift =
-    reconciliation.summary.missing_from_finance +
-    reconciliation.summary.missing_from_facilities;
-  const missingCapitalization = reconciliation.summary.missing_from_finance;
-  const phantomItems = reconciliation.summary.only_in_facilities;
+  useEffect(() => {
+    void fetchAssets(0, false);
+  }, []);
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-start mb-6">
-        <h1 className="text-2xl font-bold">Manager dashboard</h1>
-        <Link
-          href="/manager/reconcile"
-          className="text-sm text-blue-600 hover:underline"
-        >
+        <div>
+          <h1 className="text-2xl font-bold">Manager dashboard</h1>
+          <p className="mt-1 text-sm text-gray-500">Loaded in pages of 30 assets.</p>
+        </div>
+        <Link href="/manager/reconcile" className="text-sm text-blue-600 hover:underline">
           Three-way reconciliation
         </Link>
       </div>
 
-      {/* Executive Anomaly Snapshot */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <h2 className="text-xl font-semibold mb-4">Executive Anomaly Snapshot</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold text-gray-800">Total Active Drift</h3>
-            <p className="text-3xl font-bold text-red-600">{totalActiveDrift}</p>
-            <p className="text-sm text-gray-500">
-              Assets missing from Finance or Facilities
-            </p>
-          </div>
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold text-gray-800">Missing Capitalization</h3>
-            <p className="text-3xl font-bold text-amber-600">{missingCapitalization}</p>
-            <p className="text-sm text-gray-500">
-              Assets needing ERP financial synchronization
-            </p>
-          </div>
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold text-gray-800">Phantom Items in Facilities</h3>
-            <p className="text-3xl font-bold text-teal-600">{phantomItems}</p>
-            <p className="text-sm text-gray-500">
-              Assets in Facilities but not in Operations
-            </p>
-          </div>
+      {error ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+          <p className="font-medium">Failed to load assets</p>
+          <p className="mt-1 text-sm">{error}</p>
         </div>
-      </div>
+      ) : null}
 
-      {/* Asset List with Pagination and Filters */}
-      <div className="mb-6">
-        {/* Filter Controls */}
-        <div className="mb-4 flex flex-wrap items-center gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">State</label>
-            <select
-              value={filters.state ?? ""}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  state: e.target.value || undefined,
-                  page: 1, // Reset to first page when filter changes
-                }));
-              }}
-              className="border rounded px-3 py-2 w-48"
-            >
-              <option value="">All States</option>
-              <option value="received">Received</option>
-              <option value="stored">Stored</option>
-              <option value="in_service">In Service</option>
-              <option value="rma_pending">RMA Pending</option>
-              <option value="disposed">Disposed</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Site</label>
-            <input
-              type="text"
-              value={filters.site ?? ""}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  site: e.target.value || undefined,
-                  page: 1,
-                }));
-              }}
-              placeholder="Filter by site"
-              className="border rounded px-3 py-2 w-48"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Custodian</label>
-            <input
-              type="text"
-              value={filters.custodian ?? ""}
-              onChange={(e) => {
-                setFilters((prev) => ({
-                  ...prev,
-                  custodian: e.target.value || undefined,
-                  page: 1,
-                }));
-              }}
-              placeholder="Filter by custodian"
-              className="border rounded px-3 py-2 w-48"
-            />
-          </div>
+      {loading && assets.length === 0 ? (
+        <div className="flex items-center gap-3 py-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          <span className="text-sm text-gray-600">Loading assets...</span>
         </div>
-
-        {/* Asset List */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            Asset List ({totalAssets} assets)
-          </h2>
-
-          {isLoadingAssets ? (
-            <div className="flex items-center space-x-3 py-8">
-              <div className="h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-sm text-gray-600">Loading assets...</span>
-            </div>
-          ) : assets.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">
-                No assets found matching the current filters.
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Asset Tag</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Model</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">State</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">Custodian</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
               {assets.map((asset) => (
-                <Link
-                  key={asset.asset_tag}
-                  href={`/manager/assets/${asset.asset_tag}`}
-                  className="block px-4 py-3 hover:bg-gray-50"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900">{asset.asset_tag}</p>
-                      <p className="text-sm text-gray-600 truncate">
-                        {asset.model} by {asset.manufacturer}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {asset.state.replace("_", " ")} • {asset.location.site}
-                      </p>
-                    </div>
-                    <div className="text-right text-sm text-gray-500">
-                      {asset.custodian}
-                    </div>
-                  </div>
-                </Link>
+                <tr key={asset.asset_tag} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-700">
+                    <Link href={`/manager/assets/${asset.asset_tag}`} className="hover:underline">
+                      {asset.asset_tag}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{asset.model}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{asset.state.replace("_", " ")}</td>
+                  <td className="px-4 py-3 text-sm text-gray-700">{asset.custodian ?? "-"}</td>
+                </tr>
               ))}
-            </div>
-          )}
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-sm text-gray-500">
-                Page {filters.page} of {totalPages}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={prevPage}
-                  disabled={filters.page === 1}
-                  className={`px-3 py-1 rounded ${
-                    filters.page === 1
-                      ? "bg-gray-200 text-gray-500"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={nextPage}
-                  disabled={filters.page === totalPages}
-                  className={`px-3 py-1 rounded ${
-                    filters.page === totalPages
-                      ? "bg-gray-200 text-gray-500"
-                      : "bg-blue-600 text-white hover:bg-blue-700"
-                  }`}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
+      )}
+
+      <div className="mt-6 flex items-center gap-4">
+        <button
+          onClick={() => void fetchAssets(offset, true)}
+          disabled={loading || loadingMore || !hasMore}
+          className="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {loadingMore ? "Loading..." : hasMore ? "Load more" : "No more assets"}
+        </button>
+        {loadingMore ? (
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        ) : null}
       </div>
     </div>
   );

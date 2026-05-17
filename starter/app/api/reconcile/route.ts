@@ -6,7 +6,7 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     // Fetch all assets from operations with pagination handling
-    const operationsAssets = await fetchAllAssets();
+    const operationsAssets = await fetchAllAssets(request);
 
     // Fetch data from all three sources
     const [facilitiesRecords, financeRecords] = await Promise.all([
@@ -173,26 +173,40 @@ export async function GET(
   }
 }
 
-// Helper function to fetch all assets with pagination
-async function fetchAllAssets(): Promise<any[]> {
-  const limit = 100; // Reasonable page size
+// Helper function to fetch a capped number of assets with pagination
+async function fetchAllAssets(request: NextRequest): Promise<any[]> {
+  const limit = 100;
+  const maxAssets = 200;
   let offset = 0;
   let allAssets: any[] = [];
 
-  while (true) {
+  while (allAssets.length < maxAssets) {
     try {
-      // Fetch a page of assets
-      const pageAssets = await api.assets.list({});
+      const pageLimit = Math.min(limit, maxAssets - allAssets.length);
+      const url = new URL(`${request.nextUrl.origin}/api/upstream/assets`);
+      url.searchParams.set("limit", String(pageLimit));
+      url.searchParams.set("offset", String(offset));
 
-      // If we got fewer assets than the limit, we've reached the end
-      if (pageAssets.length < limit) {
-        allAssets.push(...pageAssets);
+      // Fetch a page of assets from the upstream proxy with a hard cap
+      const response = await fetch(url.toString(), { cache: "no-store" });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const pageAssets = await response.json();
+
+      if (!Array.isArray(pageAssets) || pageAssets.length === 0) {
         break;
       }
 
-      // Otherwise, add these assets and continue to the next page
-      allAssets.push(...pageAssets);
-      offset += limit;
+      allAssets.push(...pageAssets.slice(0, pageLimit));
+
+      if (pageAssets.length < pageLimit) {
+        break;
+      }
+
+      offset += pageLimit;
     } catch (error) {
       console.warn("Error fetching assets page, breaking pagination:", error);
       // If there's an error, break to avoid infinite loop
