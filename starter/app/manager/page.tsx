@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useApiData } from "@/lib/swr";
 import { useState, useEffect } from "react";
