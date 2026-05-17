@@ -82,8 +82,8 @@ export default function TechDeployPage() {
     setLocationParts({
       site: parts[0] || "",
       room: parts[1] || "",
-      rack: parts.length > 2 ? parts[2] : "",
-      ru: parts.length > 3 ? parts[3] : "",
+      rack: (parts.length > 2 ? parts[2] : "") || "",
+      ru: (parts.length > 3 ? parts[3] : "") || "",
     });
 
     setPhase("submitting");
@@ -101,8 +101,8 @@ export default function TechDeployPage() {
         site: locationParts.site,
         room: locationParts.room || null,
         row: null, // We're not capturing row in our simple parser
-        rack: locationParts.rack,
-        ru: locationParts.ru,
+        rack: locationParts.rack ?? "",
+        ru: locationParts.ru ?? "",
       };
 
       // First, deploy the asset
@@ -288,16 +288,6 @@ export default function TechDeployPage() {
               placeholder="Scan location and press Enter..."
               label="Location"
               disabled={loading}
-              value={locationParts ? `${locationParts.site}/${locationParts.room}/${locationParts.rack}/${locationParts.ru}` : ""}
-              onChange={(e) => {
-                const parts = e.target.value.split("/").filter(p => p.length > 0);
-                setLocationParts({
-                  site: parts[0] || "",
-                  room: parts[1] || "",
-                  rack: parts[2] || "",
-                  ru: parts[3] || "",
-                });
-              }}
             />
           </div>
           {locationParts && (

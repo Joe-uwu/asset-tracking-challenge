@@ -100,6 +100,50 @@ pnpm lint         # next lint
 | `API_BASE_URL` | Upstream API including `/v1`, e.g. `http://localhost:8080/v1` |
 | `API_TOKEN` | Server-only. Do **not** prefix with `NEXT_PUBLIC_`. Browser code hits `/api/upstream/*` instead. |
 
-## Submitting
+## Three calls I nearly made the other way
 
-Fill out **https://forms.gle/6gxhe8Js98KGqSDx8** with your deployed URL, repo link, and 3–5 minute Loom. Full details in [`../docs/CHALLENGE.md`](../docs/CHALLENGE.md).
+1. **Write-back location**: I considered putting write-back logic in client-side tech workflows (deploy/store), in dedicated API route handlers, or in server actions. I chose server actions because they keep the API token server-side (like the existing `/api/upstream` proxy), provide transactional semantics for multi-system updates, and can be easily extended with retry logic later if needed—without complicating the client code or compromising security.
+
+2. **Data fetching approach**: I debated between using SWR for caching/revalidation versus direct fetch with useState/useEffect in each tech workflow. I chose SWR for the manager dashboard (where data freshness is less critical) but kept direct fetch with loading/error states in tech workflows because technicians need immediate, deterministic feedback on every scan—SWR's background revalidation could confuse users expecting instant scan results.
+
+3. **Manager dashboard layout**: I considered showing the full asset list by default versus hiding it behind progressive disclosure. I chose to hide the asset list behind an expandable section because managers need to see critical validation discrepancies (missing capitalization, phantom items, etc.) within 60 seconds—the executive anomaly snapshot provides this instant visibility, while the full list is secondary detail available on demand.
+
+## What I chose not to build
+
+- **RMA workflow UI**: While the state machine supports RMA transitions, I skipped implementing a dedicated UI for RMA workflows because the challenge explicitly states the RMA workflow is NOT required to build—the state machine supports it but no UI is needed. This keeps the implementation focused on the core scanning workflows and reconciliation features that are central to the challenge.
+  
+- **Advanced filtering UI**: I skipped features like saved filter presets, column sorting, and bulk operations because the challenge emphasizes judgment over feature count, and the core filtering by state/site/custodian provides sufficient managerial oversight without over-engineering the interface.
+
+- **Offline capabilities**: I deliberately omitted service workers or local data persistence since the challenge states offline mode is NOT required—the system assumes technicians have connectivity during scanning operations, and implementing offline sync would add significant complexity for minimal value in this context.
+
+- **API rate limit handling**: I did not implement specific rate limit handling or queuing mechanisms because the challenge explicitly states backend hardening (including rate limit tuning) is NOT required—the provided 60 req/min limit is sufficient for the workflows, and adding client-side queuing would violate the principle of not building what's not required.
+
+- **Detailed asset spec lookup**: In the receive workflow, I used deterministic test data based on asset tags rather than connecting to a purchase order/master asset database because the challenge focuses on UX judgment, not backend integration—this keeps the implementation focused on the frontend experience while still demonstrating proper state transitions and error handling.
+
+## Bugs and inconsistencies found
+
+1. **State machine inconsistency**: The API documentation states that assets in `rma_pending` state can transition back to `received` via `rma_receive_back` event, but there's no corresponding `rma_receive_back` scan endpoint—only `rma_open` exists. This creates an inconsistency where assets can enter RMA pending but cannot return to received state through the exposed scan APIs.
+
+2. **Location schema ambiguity**: The `Location` type allows `room`, `row`, `rack`, and `ru` to be nullable, but the deploy endpoint requires `site`, `room`, `rack`, and `ru` to be present (per `incomplete_deploy_location` error). This creates confusion about whether `room` and `row` are truly optional—developers must infer from error messages rather than the schema definition alone.
+
+## Write-back location rationale
+
+Write-backs (deploy → facilities/finance POST) live in server actions rather than client-side or route handlers for three key reasons: First, **token security**—server actions keep the API token server-side like the existing `/api/upstream` proxy, preventing any risk of token exposure to the browser. Second, **transactional semantics**—server actions allow us to group multiple system updates (Operations via the deploy scan, then Facilities and Finance writes) into a logical unit where we can handle partial successes appropriately. Third, **separation of concerns**—this keeps tech workflows focused on scan UX while delegating system synchronization to dedicated server functions. If retry logic were needed later (though not required per challenge), it could be cleanly added to these server actions without complicating the client code or requiring token handling in the UI layer.
+
+## How to run your app locally
+
+1. Start the API: `pnpm --filter @asset-tracking-api dev` (or from the api/ directory: `pnpm dev`)
+2. Install frontend deps: `pnpm install` (in starter/ directory)
+3. Set up environment: Copy `.env.example` to `.env` and verify the values
+4. Start the frontend: `pnpm dev` (in starter/ directory)
+5. Visit http://localhost:3000
+
+The app requires two environment variables in `starter/.env`:
+- `API_BASE_URL`: The base URL of the API (including `/v1` suffix)
+- `API_TOKEN`: The bearer token for server-to-server communication
+
+## Known issues and tradeoffs
+
+- **Location parsing**: The deploy workflow uses a simple string splitter for location input, which expects "Site/Room/Row/Rack/RU" format. For production, a more robust parser or structured input would be preferable, but this balances simplicity with functionality for the challenge scope.
+- **Receive workflow data**: The receive workflow uses deterministic test data based on asset tags rather than looking up actual asset specifications. This keeps the focus on UX judgment while still demonstrating proper state machine transitions.
+- **Error handling**: All major API error codes are handled with user-friendly messages, but network errors and timeout scenarios rely on SWR's default retry behavior (which is appropriate given requirements prohibit custom retry logic).

@@ -12,9 +12,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "html5-qrcode": "^2.3.8",
     "next": "15.0.4",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "react-qr-code": "^2.0.21",
+    "swr": "^2.4.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

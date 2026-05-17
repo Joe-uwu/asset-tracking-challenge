@@ -320,7 +320,7 @@ export default function ManagerLandingPage() {
                         {asset.model} by {asset.manufacturer}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {asset.state.replace("_", " ")} • {asset.site}
+                        {asset.state.replace("_", " ")} • {asset.location.site}
                       </p>
                     </div>
                     <div className="text-right text-sm text-gray-500">
