@@ -30,6 +30,9 @@ export default function TechDeployPage() {
     setLocationParts(null);
     setError(null);
     setSuccess(null);
+    setLoading(false);
+    setScanMethod("keyboard");
+    setCameraPermissionGranted(false);
     setPhase("asset");
   };
 

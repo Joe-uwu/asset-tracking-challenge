@@ -15,6 +15,9 @@ export default function TechReceivePage() {
       return;
     }
 
+    const unknownModel = "Unknown Model";
+    const unknownManufacturer = "Unknown";
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -22,9 +25,9 @@ export default function TechReceivePage() {
     try {
       await api.scans.receive({
         asset_tag: trimmedTag,
-        serial: trimmedTag,
-        model: trimmedTag,
-        manufacturer: trimmedTag,
+        serial: `SN-${trimmedTag}`,
+        model: unknownModel,
+        manufacturer: unknownManufacturer,
         asset_class: "instrument",
         location: {
           site: "",

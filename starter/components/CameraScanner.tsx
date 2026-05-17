@@ -77,10 +77,10 @@ export function CameraScanner({
 
   if (!isScanning) {
     return (
-      <div className="flex items-center justify-center p-4">
+      <div className="flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <button
           onClick={startScanning}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="w-full rounded-xl bg-[#2563eb] px-5 py-4 text-lg font-semibold text-white hover:bg-blue-700"
         >
           Start Camera Scan
         </button>
@@ -89,8 +89,11 @@ export function CameraScanner({
   }
 
   return (
-    <div className="relative w-full h-[300px]">
-      <div id="reader" className="w-full h-full" />
+    <div className="relative w-full min-h-[320px] overflow-hidden rounded-2xl border border-slate-300 bg-slate-950">
+      <div id="reader" className="h-[320px] w-full [&>video]:h-full [&>video]:w-full [&>video]:object-cover [&>div]:h-full [&>div]:w-full" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent px-4 py-3 text-sm text-white/90">
+        Camera viewfinder
+      </div>
       {!isScanning && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="text-white text-center">

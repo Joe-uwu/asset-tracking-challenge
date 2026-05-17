@@ -25,6 +25,9 @@ export default function TechTransferPage() {
     setToCustodian(null);
     setError(null);
     setSuccess(null);
+    setLoading(false);
+    setScanMethod("keyboard");
+    setCameraPermissionGranted(false);
     setPhase("asset");
   };
 
