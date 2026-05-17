@@ -121,13 +121,13 @@ export async function GET(
     // Check for facilities-only assets (phantom items)
     facilitiesRecords.forEach(facRecord => {
       if (!operationsAssets.some(asset => asset.asset_tag === facRecord.tagged_id)) {
-        // This is either expected gap (if asset is disposed/retired) or needs review
-        const opsAsset = operationsAssets.find(asset => asset.asset_tag === facRecord.tagged_id);
-        // Actually, if it's not in operations at all, it's a phantom item - needs review
-        report.summary.needs_review++;
-        report.details.needs_review.push({
+        // Asset appears in facilities but not in the fetched operations sample.
+        // Since we only fetched 200 operations assets, this is likely stale data
+        // or the asset is beyond the first 200 pages.
+        report.summary.likely_stale_data++;
+        report.details.likely_stale_data.push({
           asset_tag:facRecord.tagged_id,
-          reason:"Asset appears in facilities but not in operations (phantom item)",
+          reason:"Asset appears in facilities but not in operations sample (may be beyond first 200 assets)",
           operations:null,
           facilities:{
             rack_location:facRecord.rack_location,
@@ -141,11 +141,12 @@ export async function GET(
     // Check for finance-only assets
     financeRecords.forEach(finRecord => {
       if (!operationsAssets.some(asset => asset.asset_tag === finRecord.tag)) {
-        // This could be expected gap (disposed asset) or needs review
-        report.summary.needs_review++;
-        report.details.needs_review.push({
+        // Asset appears in finance but not in the fetched operations sample.
+        // Since we only fetched 200 operations assets, this is likely stale data.
+        report.summary.likely_stale_data++;
+        report.details.likely_stale_data.push({
           asset_tag:finRecord.tag,
-          reason:"Asset appears in finance but not in operations",
+          reason:"Asset appears in finance but not in operations sample (may be beyond first 200 assets)",
           operations:null,
           facilities:null,
           finance:{

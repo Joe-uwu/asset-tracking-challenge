@@ -252,8 +252,6 @@ export default function TechDeployPage() {
             label="Asset Tag"
             disabled={loading}
             autoFocus={true}
-            hardwareScannerMode={true}
-            debounceMs={50}
           />
         </>
       )}

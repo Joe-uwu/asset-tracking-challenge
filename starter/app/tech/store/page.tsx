@@ -195,8 +195,6 @@ export default function TechStorePage() {
             label="Asset Tag"
             disabled={loading}
             autoFocus={true}
-            hardwareScannerMode={true}
-            debounceMs={50}
           />
         </>
       )}
@@ -225,6 +223,7 @@ export default function TechStorePage() {
               placeholder="Scan storage location (site) and press Enter..."
               label="Location"
               disabled={loading}
+              autoFocus={true}
             />
           </div>
           {location && (

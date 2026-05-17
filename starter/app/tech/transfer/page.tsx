@@ -174,8 +174,6 @@ export default function TechTransferPage() {
             label="Asset Tag"
             disabled={loading}
             autoFocus={true}
-            hardwareScannerMode={true}
-            debounceMs={50}
           />
         </>
       )}
