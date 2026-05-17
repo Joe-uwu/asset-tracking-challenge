@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useApiData } from "@/lib/swr";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Asset } from "@/lib/types";
 
@@ -26,7 +26,15 @@ type ReconciliationData = {
   };
 };
 
-export default function ManagerLandingPage() {
+export default function ManagerPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <ManagerPageContent />
+    </Suspense>
+  );
+}
+
+function ManagerPageContent() {
   const { data: reconciliation, isLoading, error } = useApiData<ReconciliationData>(
     "/api/reconcile"
   );
