@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 RUN apk add --no-cache python3 make g++ sqlite
 
@@ -12,7 +12,7 @@ RUN pnpm install --prod=false --frozen-lockfile=false
 COPY src ./src
 RUN pnpm build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 RUN apk add --no-cache sqlite
 
