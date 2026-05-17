@@ -6,7 +6,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@11.1.1 --activate
 
-COPY package.json tsconfig.json ./
+COPY package.json tsconfig.json .npmrc ./
 RUN pnpm install --prod=false --frozen-lockfile=false
 
 COPY src ./src
